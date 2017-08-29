@@ -11,12 +11,12 @@ using System.Collections.Generic;
 
 namespace FACommands
 {
-    [ApiVersion(2, 00)]
+    [ApiVersion(2, 1)]
     public class FACommands : TerrariaPlugin
     {
         public DateTime LastCheck;
-        private FACommands.Config config;
-        public FACPlayer[] Playerlist = new FACPlayer[1];
+        private Config config;
+        private FACPlayer[] Playerlist = new FACPlayer[1];
 
         public override string Name
         {
@@ -24,7 +24,7 @@ namespace FACommands
         }
         public override Version Version
         {
-            get { return new Version(1, 3, 0); }
+            get { return new Version(1, 4, 0); }
         }
         public override string Author
         {
@@ -302,9 +302,52 @@ namespace FACommands
             {
                 HelpText = "Lists detailed informations about banned players."
             });
+            Commands.ChatCommands.Add(new Command("facommands.fun", FACDice, "diceroll", "dr")
+            {
+                HelpText = "Roll a Dice! As a parameter you can set rage!"
+            });
             ReadConfig();
         }
 
+        private void FACDice(CommandArgs args)
+        {
+            if(args.Parameters.Count != 0)
+            {
+                if(args.Parameters.Count == 2 || args.Parameters.Count > 2)
+                {
+                    int min, max;
+                    try
+                    {
+                        min = Int32.Parse(args.Parameters[0]);
+                        max = Int32.Parse(args.Parameters[1]);
+                    }
+                    catch(Exception exe)
+                    {
+                        TShock.Log.Error("Error while parsing!");
+                        TShock.Log.Error(exe.ToString());
+                        args.Player.SendErrorMessage("Only numbers! Nothing else!");
+                        return;
+                    }
+                    if((max - min) < config.minRangeRollDice)
+                    {
+                        args.Player.SendErrorMessage("Range must me at least " + config.minRangeRollDice + " numbers!");
+                        return;
+                    }
+                    TSPlayer.All.SendData(PacketTypes.CreateCombatText, "", (int)new Color(112, 218, 255).PackedValue, args.TPlayer.position.X, args.TPlayer.position.Y + 32, new Random().Next(min, max));
+                    return;
+                }
+                args.Player.SendErrorMessage("Invalid syntax! Proper syntax: /diceroll [min] [max]");
+                return;
+            }
+            if(config.maxRollDice < 0)
+            {
+                args.Player.SendErrorMessage("Max value can't be smaller than 0!");
+                args.Player.SendErrorMessage("If you want to get negativ valeue use: /dr [min] [max]");
+                args.Player.SendErrorMessage("Setting max value to default");
+                config.maxRollDice = 100;
+            }
+            TSPlayer.All.SendData(PacketTypes.CreateCombatText, "", (int)new Color(112, 218, 255).PackedValue, args.TPlayer.position.X, args.TPlayer.position.Y + 32, new Random().Next(0, config.maxRollDice));
+        }
         private void FACBB(CommandArgs args)
         {
             FACPlayer facPlayer = this.Playerlist[args.Player.Index];
@@ -365,10 +408,10 @@ namespace FACommands
                         if (obj != null && obj.stack != 0)
                         {
                             int num2 = (obj.maxStack - obj.stack);
-                            if (obj.stack > 0 && num2 > 0 && !((obj).name).ToLower().Contains("coin"))
+                            if (obj.stack > 0 && num2 > 0 && !obj.Name.ToLower().Contains("coin"))
                             {
                                 flag = false;
-                                args.Player.GiveItem(obj.type, (obj).name, (obj).width, (obj).height, num2, 0);
+                                args.Player.GiveItem(obj.type, obj.Name, obj.width, obj.height, num2, 0);
                             }
                             ++num1;
                         }
@@ -383,11 +426,11 @@ namespace FACommands
                     Item obj = args.Player.TPlayer.inventory[args.TPlayer.selectedItem];
                     int num = (obj.maxStack - obj.stack);
                     if (obj.stack > 0 && num > 0)
-                        args.Player.GiveItem(obj.type, (obj).name, (obj).width, obj.height, num, 0);
+                        args.Player.GiveItem(obj.type, obj.Name, obj.width, obj.height, num, 0);
                     if (num == 0)
-                        args.Player.SendErrorMessage("Your {0} is already full.", (obj).name);
+                        args.Player.SendErrorMessage("Your {0} is already full.", obj.Name);
                     else
-                        args.Player.SendSuccessMessage("Filled up your {0}.", (obj).name);
+                        args.Player.SendSuccessMessage("Filled up your {0}.", obj.Name);
                 }
                 if (!args.Player.Group.HasPermission("facommands.nocd"))
                     facPlayer.moreCD = config.moreCD;
@@ -406,29 +449,29 @@ namespace FACommands
                 }
             }
             TSPlayer.All.SendInfoMessage(string.Format("{0} killed {1} friendly NPCs and spawned all town NPCs.", args.Player.Name, num));
-            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(19).type, TShock.Utils.GetNPCById(19).name, 1, args.Player.TileX, args.Player.TileY, 20, 20);
-            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(54).type, TShock.Utils.GetNPCById(54).name, 1, args.Player.TileX, args.Player.TileY, 20, 20);
-            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(209).type, TShock.Utils.GetNPCById(209).name, 1, args.Player.TileX, args.Player.TileY, 20, 20);
-            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(38).type, TShock.Utils.GetNPCById(38).name, 1, args.Player.TileX, args.Player.TileY, 20, 20);
-            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(20).type, TShock.Utils.GetNPCById(20).name, 1, args.Player.TileX, args.Player.TileY, 20, 20);
-            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(207).type, TShock.Utils.GetNPCById(207).name, 1, args.Player.TileX, args.Player.TileY, 20, 20);
-            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(107).type, TShock.Utils.GetNPCById(107).name, 1, args.Player.TileX, args.Player.TileY, 20, 20);
-            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(22).type, TShock.Utils.GetNPCById(22).name, 1, args.Player.TileX, args.Player.TileY, 20, 20);
-            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(124).type, TShock.Utils.GetNPCById(124).name, 1, args.Player.TileX, args.Player.TileY, 20, 20);
-            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(17).type, TShock.Utils.GetNPCById(17).name, 1, args.Player.TileX, args.Player.TileY, 20, 20);
-            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(18).type, TShock.Utils.GetNPCById(18).name, 1, args.Player.TileX, args.Player.TileY, 20, 20);
-            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(227).type, TShock.Utils.GetNPCById(227).name, 1, args.Player.TileX, args.Player.TileY, 20, 20);
-            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(208).type, TShock.Utils.GetNPCById(208).name, 1, args.Player.TileX, args.Player.TileY, 20, 20);
-            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(229).type, TShock.Utils.GetNPCById(229).name, 1, args.Player.TileX, args.Player.TileY, 20, 20);
-            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(178).type, TShock.Utils.GetNPCById(178).name, 1, args.Player.TileX, args.Player.TileY, 20, 20);
-            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(353).type, TShock.Utils.GetNPCById(353).name, 1, args.Player.TileX, args.Player.TileY, 20, 20);
-            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(368).type, TShock.Utils.GetNPCById(368).name, 1, args.Player.TileX, args.Player.TileY, 20, 20);
-            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(160).type, TShock.Utils.GetNPCById(160).name, 1, args.Player.TileX, args.Player.TileY, 20, 20);
-            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(228).type, TShock.Utils.GetNPCById(228).name, 1, args.Player.TileX, args.Player.TileY, 20, 20);
-            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(108).type, TShock.Utils.GetNPCById(108).name, 1, args.Player.TileX, args.Player.TileY, 20, 20);
-            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(369).type, TShock.Utils.GetNPCById(369).name, 1, args.Player.TileX, args.Player.TileY, 20, 20);
-            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(441).type, TShock.Utils.GetNPCById(441).name, 1, args.Player.TileX, args.Player.TileY, 20, 20);
-            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(550).type, TShock.Utils.GetNPCById(550).name, 1, args.Player.TileX, args.Player.TileY, 20, 20);
+            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(19).type, TShock.Utils.GetNPCById(19).FullName, 1, args.Player.TileX, args.Player.TileY, 20, 20);
+            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(54).type, TShock.Utils.GetNPCById(54).FullName, 1, args.Player.TileX, args.Player.TileY, 20, 20);
+            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(209).type, TShock.Utils.GetNPCById(209).FullName, 1, args.Player.TileX, args.Player.TileY, 20, 20);
+            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(38).type, TShock.Utils.GetNPCById(38).FullName, 1, args.Player.TileX, args.Player.TileY, 20, 20);
+            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(20).type, TShock.Utils.GetNPCById(20).FullName, 1, args.Player.TileX, args.Player.TileY, 20, 20);
+            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(207).type, TShock.Utils.GetNPCById(207).FullName, 1, args.Player.TileX, args.Player.TileY, 20, 20);
+            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(107).type, TShock.Utils.GetNPCById(107).FullName, 1, args.Player.TileX, args.Player.TileY, 20, 20);
+            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(22).type, TShock.Utils.GetNPCById(22).FullName, 1, args.Player.TileX, args.Player.TileY, 20, 20);
+            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(124).type, TShock.Utils.GetNPCById(124).FullName, 1, args.Player.TileX, args.Player.TileY, 20, 20);
+            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(17).type, TShock.Utils.GetNPCById(17).FullName, 1, args.Player.TileX, args.Player.TileY, 20, 20);
+            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(18).type, TShock.Utils.GetNPCById(18).FullName, 1, args.Player.TileX, args.Player.TileY, 20, 20);
+            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(227).type, TShock.Utils.GetNPCById(227).FullName, 1, args.Player.TileX, args.Player.TileY, 20, 20);
+            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(208).type, TShock.Utils.GetNPCById(208).FullName, 1, args.Player.TileX, args.Player.TileY, 20, 20);
+            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(229).type, TShock.Utils.GetNPCById(229).FullName, 1, args.Player.TileX, args.Player.TileY, 20, 20);
+            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(178).type, TShock.Utils.GetNPCById(178).FullName, 1, args.Player.TileX, args.Player.TileY, 20, 20);
+            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(353).type, TShock.Utils.GetNPCById(353).FullName, 1, args.Player.TileX, args.Player.TileY, 20, 20);
+            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(368).type, TShock.Utils.GetNPCById(368).FullName, 1, args.Player.TileX, args.Player.TileY, 20, 20);
+            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(160).type, TShock.Utils.GetNPCById(160).FullName, 1, args.Player.TileX, args.Player.TileY, 20, 20);
+            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(228).type, TShock.Utils.GetNPCById(228).FullName, 1, args.Player.TileX, args.Player.TileY, 20, 20);
+            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(108).type, TShock.Utils.GetNPCById(108).FullName, 1, args.Player.TileX, args.Player.TileY, 20, 20);
+            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(369).type, TShock.Utils.GetNPCById(369).FullName, 1, args.Player.TileX, args.Player.TileY, 20, 20);
+            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(441).type, TShock.Utils.GetNPCById(441).FullName, 1, args.Player.TileX, args.Player.TileY, 20, 20);
+            TSPlayer.Server.SpawnNPC(TShock.Utils.GetNPCById(550).type, TShock.Utils.GetNPCById(550).FullName, 1, args.Player.TileX, args.Player.TileY, 20, 20);
         }
 
         private void FACOBC(CommandArgs args)
@@ -461,10 +504,10 @@ namespace FACommands
                 else
                 {
                     TSPlayer tsPlayer = player[0];
-                    NetMessage.SendData(26, -1, -1, " " + string.Join(" ", args.Parameters.Skip<string>(1)), tsPlayer.Index, 0.0f, 15000f, 0.0f, 0, 0, 0);
+                    NetMessage.SendData(26, -1, -1, new Terraria.Localization.NetworkText(" " + string.Join(" ", args.Parameters.Skip(1)), Terraria.Localization.NetworkText.Mode.Literal), tsPlayer.Index, 0.0f, 15000f, 0.0f, 0, 0, 0);
                     args.Player.SendSuccessMessage("You just slayed {0}.", new object[1]
                     {
-             tsPlayer.Name
+                        tsPlayer.Name
                     });
                 }
                 if (!args.Player.Group.HasPermission("facommands.nocd"))
@@ -985,7 +1028,7 @@ namespace FACommands
                     if (new Random().Next(2) == 0)
                     {
                         Item itemById = TShock.Utils.GetItemById(1922);
-                        tsPlayer.GiveItem(itemById.type, (itemById).name, (itemById).width, (itemById).height, itemById.maxStack, 0);
+                        tsPlayer.GiveItem(itemById.type, (itemById).Name, (itemById).width, (itemById).height, itemById.maxStack, 0);
                         tsPlayer.SendInfoMessage("{0} gave you Coal! You were a naughty {1}...", new object[2]
                         {
                args.Player.Name,
@@ -1000,7 +1043,7 @@ namespace FACommands
                     else
                     {
                         Item itemById = TShock.Utils.GetItemById(1869);
-                        tsPlayer.GiveItem(itemById.type, (itemById).name, (itemById).width, (itemById).height, itemById.stack, 1);
+                        tsPlayer.GiveItem(itemById.type, (itemById).Name, (itemById).width, (itemById).height, itemById.stack, 1);
                         tsPlayer.SendInfoMessage("{0} gave you a Present! You were a good {1}...", new object[2]
                         {
                args.Player.Name,
@@ -1179,7 +1222,7 @@ namespace FACommands
 
         private void Reload_Config(CommandArgs args)
         {
-            if (this.ReadConfig())
+            if (ReadConfig())
                 args.Player.SendMessage("FACommands config reloaded sucessfully.", Color.Yellow);
             else
                 args.Player.SendErrorMessage("FACommands config reload failed! Check logs for details!");
@@ -1209,6 +1252,8 @@ namespace FACommands
             public int giftCD = 300;
             public int disturbCD = 120;
             public int bankCD = 10;
+            public int maxRollDice = 100;
+            public int minRangeRollDice = 10;
         }
     }
 }
