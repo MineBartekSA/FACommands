@@ -17,6 +17,7 @@ namespace FACommands
         public DateTime LastCheck;
         private Config config;
         private Dictionary<TSPlayer, FACPlayer> PlayerList = new Dictionary<TSPlayer, FACPlayer>();
+        private Random r = new Random();
 
         public override string Name
         {
@@ -339,7 +340,7 @@ namespace FACommands
                         args.Player.SendErrorMessage("Range must me at least " + config.minRangeRollDice + " numbers!");
                         return;
                     }
-                    TSPlayer.All.SendData(PacketTypes.CreateCombatText, "", (int)new Color(112, 218, 255).PackedValue, args.TPlayer.position.X, args.TPlayer.position.Y + 32, new Random().Next(min, max));
+                    TSPlayer.All.SendData(PacketTypes.CreateCombatText, "", (int)new Color(112, 218, 255).PackedValue, args.TPlayer.position.X, args.TPlayer.position.Y + 32, r.Next(min, max));
                     return;
                 }
                 args.Player.SendErrorMessage("Invalid syntax! Proper syntax: /diceroll [min] [max]");
@@ -352,7 +353,7 @@ namespace FACommands
                 args.Player.SendErrorMessage("Setting max value to default");
                 config.maxRollDice = 100;
             }
-            TSPlayer.All.SendData(PacketTypes.CreateCombatText, "", (int)new Color(112, 218, 255).PackedValue, args.TPlayer.position.X, args.TPlayer.position.Y + 32, new Random().Next(0, config.maxRollDice));
+            TSPlayer.All.SendData(PacketTypes.CreateCombatText, "", (int)new Color(112, 218, 255).PackedValue, args.TPlayer.position.X, args.TPlayer.position.Y + 32, r.Next(0, config.maxRollDice));
         }
         private void FACBB(CommandArgs args)
         {
@@ -863,7 +864,6 @@ namespace FACommands
         private void FACStab(CommandArgs args)
         {
             FACPlayer facPlayer = PlayerList[args.Player];
-            Random r = new Random();
             int rand = r.Next(0, 100);
             if (facPlayer.stabCD != 0 && !args.Player.Group.HasPermission("facommands.nocd"))
                 args.Player.SendErrorMessage("This command is on cooldown for {0} seconds.", facPlayer.stabCD);
