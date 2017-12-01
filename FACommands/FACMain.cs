@@ -16,7 +16,7 @@ namespace FACommands
     {
         public DateTime LastCheck;
         private Config config;
-        private FACPlayer[] Playerlist = new FACPlayer[1];
+        private Dictionary<TSPlayer, FACPlayer> PlayerList = new Dictionary<TSPlayer, FACPlayer>();
 
         public override string Name
         {
@@ -24,7 +24,7 @@ namespace FACommands
         }
         public override Version Version
         {
-            get { return new Version(1, 4, 0); }
+            get { return new Version(1, 5, 0); }
         }
         public override string Author
         {
@@ -59,12 +59,18 @@ namespace FACommands
 
         public void OnJoin(JoinEventArgs args)
         {
-            Playerlist[args.Who] = new FACPlayer(args.Who);
+            if(!PlayerList.ContainsKey(TShock.Players[args.Who]))
+                PlayerList.Add(TShock.Players[args.Who], new FACPlayer(TShock.Players[args.Who]));
         }
 
         public void OnLeave(LeaveEventArgs args)
         {
-            Playerlist[args.Who] = null;
+            try
+            {
+                if (!PlayerList.ContainsKey(TShock.Players[args.Who]))
+                    PlayerList.Remove(TShock.Players[args.Who]);
+            }
+            catch { }
         }
 
         private void Cooldowns(EventArgs args)
@@ -72,7 +78,7 @@ namespace FACommands
             if ((DateTime.UtcNow - LastCheck).TotalSeconds < 1.0)
                 return;
             LastCheck = DateTime.UtcNow;
-            foreach (FACPlayer facPlayer1 in Playerlist)
+            foreach (FACPlayer facPlayer1 in PlayerList.Values)
             {
                 if (facPlayer1 != null && facPlayer1.TSPlayer != null)
                 {
@@ -350,7 +356,7 @@ namespace FACommands
         }
         private void FACBB(CommandArgs args)
         {
-            FACPlayer facPlayer = this.Playerlist[args.Player.Index];
+            FACPlayer facPlayer = PlayerList[args.Player];
             if (facPlayer.bankCD != 0 && !args.Player.Group.HasPermission("facommands.nocd"))
             {
                 args.Player.SendErrorMessage("This command is on cooldown for {0} seconds.", facPlayer.bankCD);
@@ -392,7 +398,7 @@ namespace FACommands
 
         private void FACMore(CommandArgs args)
         {
-            FACPlayer facPlayer = Playerlist[args.Player.Index];
+            FACPlayer facPlayer = PlayerList[args.Player];
             if (facPlayer.moreCD != 0 && !args.Player.Group.HasPermission("facommands.nocd"))
             {
                 args.Player.SendErrorMessage("This command is on cooldown for {0} seconds.", facPlayer.moreCD);
@@ -482,7 +488,7 @@ namespace FACommands
 
         private void FACSlay(CommandArgs args)
         {
-            FACPlayer facPlayer = this.Playerlist[args.Player.Index];
+            FACPlayer facPlayer = PlayerList[args.Player];
             if (facPlayer.slayCD != 0 && !args.Player.Group.HasPermission("facommands.nocd"))
                 args.Player.SendErrorMessage("This command is on cooldown for {0} seconds.", facPlayer.slayCD);
             else if (args.Parameters.Count < 2)
@@ -517,12 +523,9 @@ namespace FACommands
 
         private void FACFart(CommandArgs args)
         {
-            FACPlayer facPlayer = this.Playerlist[args.Player.Index];
+            FACPlayer facPlayer = PlayerList[args.Player];
             if (facPlayer.fartCD != 0 && !args.Player.Group.HasPermission("facommands.nocd"))
-                args.Player.SendErrorMessage("This command is on cooldown for {0} seconds.", new object[1]
-                {
-           facPlayer.fartCD
-                });
+                args.Player.SendErrorMessage("This command is on cooldown for {0} seconds.", facPlayer.fartCD);
             else if (args.Parameters.Count != 1)
                 args.Player.SendErrorMessage("Invalid syntax! Proper syntax: /fart <player>");
             else if (args.Parameters[0].Length == 0)
@@ -546,16 +549,9 @@ namespace FACommands
                     TSPlayer tsPlayer = player[0];
                     tsPlayer.SetBuff(163, 600, true);
                     tsPlayer.SetBuff(120, 600, true);
-                    args.Player.SendInfoMessage("Woah! That fart dude! You shouldn't eat so much shit!", new object[1]
-                    {
-             tsPlayer.Name
-                    });
-                    (TSPlayer.All).SendMessage(string.Format("{0} turned around and farted {1} in the face! Woah! That fart mades you blind dude! aahh it stinks so much! Run away! o.O", args.Player.Name, tsPlayer.Name), Color.Sienna);
-                    (TShock.Log).Info("{0} farted {1} in the face!", new object[2]
-                    {
-             args.Player.Name,
-             tsPlayer.Name
-                    });
+                    args.Player.SendInfoMessage("Woah! That fart dude! You shouldn't eat so much shit!", tsPlayer.Name);
+                    TSPlayer.All.SendMessage(string.Format("{0} turned around and farted {1} in the face! Woah! That fart mades you blind dude! aahh it stinks so much! Run away! o.O", args.Player.Name, tsPlayer.Name), Color.Sienna);
+                    TShock.Log.Info("{0} farted {1} in the face!", args.Player.Name, tsPlayer.Name );
                     if (!args.Player.Group.HasPermission("facommands.nocd"))
                         facPlayer.fartCD = this.config.fartCD;
                 }
@@ -564,7 +560,7 @@ namespace FACommands
 
         private void FACTickle(CommandArgs args)
         {
-            FACPlayer facPlayer = this.Playerlist[args.Player.Index];
+            FACPlayer facPlayer = PlayerList[args.Player];
             if (facPlayer.tickleCD != 0 && !args.Player.Group.HasPermission("facommands.nocd"))
                 args.Player.SendErrorMessage("This command is on cooldown for {0} seconds.", new object[1]
                 {
@@ -603,7 +599,7 @@ namespace FACommands
 
         private void FACPoke(CommandArgs args)
         {
-            FACPlayer facPlayer = this.Playerlist[args.Player.Index];
+            FACPlayer facPlayer = PlayerList[args.Player];
             if (facPlayer.pokeCD != 0 && !args.Player.Group.HasPermission("facommands.nocd"))
                 args.Player.SendErrorMessage("This command is on cooldown for {0} seconds.", facPlayer.pokeCD);
             else if (args.Parameters.Count != 1)
@@ -637,7 +633,7 @@ namespace FACommands
 
         private void FACSPoke(CommandArgs args)
         {
-            FACPlayer facPlayer = Playerlist[args.Player.Index];
+            FACPlayer facPlayer = PlayerList[args.Player];
             if (facPlayer.spokeCD != 0 && !args.Player.Group.HasPermission("facommands.nocd"))
                 args.Player.SendErrorMessage("This command is on cooldown for {0} seconds.", facPlayer.spokeCD);
             else if (args.Parameters.Count != 1)
@@ -671,7 +667,7 @@ namespace FACommands
 
         private void FACHug(CommandArgs args)
         {
-            FACPlayer facPlayer = Playerlist[args.Player.Index];
+            FACPlayer facPlayer = PlayerList[args.Player];
             if (facPlayer.hugCD != 0 && !args.Player.Group.HasPermission("facommands.nocd"))
                 args.Player.SendErrorMessage("This command is on cooldown for {0} seconds.", facPlayer.hugCD);
             else if (args.Parameters.Count != 1)
@@ -711,7 +707,7 @@ namespace FACommands
 
         private void FACLick(CommandArgs args)
         {
-            FACPlayer facPlayer = Playerlist[args.Player.Index];
+            FACPlayer facPlayer = PlayerList[args.Player];
             if (facPlayer.lickCD != 0 && !args.Player.Group.HasPermission("facommands.nocd"))
                 args.Player.SendErrorMessage("This command is on cooldown for {0} seconds.", facPlayer.lickCD);
             else if (args.Parameters.Count != 1)
@@ -759,7 +755,7 @@ namespace FACommands
 
         private void FACPalm(CommandArgs args)
         {
-            FACPlayer facPlayer = Playerlist[args.Player.Index];
+            FACPlayer facPlayer = PlayerList[args.Player];
             if (facPlayer.facepalmCD != 0 && !args.Player.Group.HasPermission("facommands.nocd"))
             {
                 args.Player.SendErrorMessage("This command is on cooldown for {0} seconds.", new object[1]
@@ -779,7 +775,7 @@ namespace FACommands
 
         private void FACKiss(CommandArgs args)
         {
-            FACPlayer facPlayer = Playerlist[args.Player.Index];
+            FACPlayer facPlayer = PlayerList[args.Player];
             if (facPlayer.kissCD != 0 && !args.Player.Group.HasPermission("facommands.nocd"))
                 args.Player.SendErrorMessage("This command is on cooldown for {0} seconds.", facPlayer.kissCD);
             else if (args.Parameters.Count != 1)
@@ -827,7 +823,7 @@ namespace FACommands
 
         private void FACBaby(CommandArgs args)
         {
-            FACPlayer facPlayer = this.Playerlist[args.Player.Index];
+            FACPlayer facPlayer = PlayerList[args.Player];
             if (facPlayer.babyCD != 0 && !args.Player.Group.HasPermission("facommands.nocd"))
                 args.Player.SendErrorMessage("This command is on cooldown for {0} seconds.", facPlayer.babyCD);
             else if (args.Parameters.Count != 1)
@@ -866,7 +862,7 @@ namespace FACommands
 
         private void FACStab(CommandArgs args)
         {
-            FACPlayer facPlayer = Playerlist[args.Player.Index];
+            FACPlayer facPlayer = PlayerList[args.Player];
             Random r = new Random();
             int rand = r.Next(0, 100);
             if (facPlayer.stabCD != 0 && !args.Player.Group.HasPermission("facommands.nocd"))
@@ -901,7 +897,7 @@ namespace FACommands
                     }
                     else
                     {
-                        TSPlayer.All.SendMessage(string.Format("{0} got stabbed mercilessly! But we can't found stabber! O.O", tsPlayer.Name), Color.AliceBlue);
+                        TSPlayer.All.SendMessage(string.Format("{0} got stabbed mercilessly! But we can't find the stabber! O.O", tsPlayer.Name), Color.AliceBlue);
                     }
                     TShock.Log.Info("{0} stabbed {1}.", new object[2]
                     {
@@ -916,7 +912,7 @@ namespace FACommands
 
         private void FACLove(CommandArgs args)
         {
-            FACPlayer facPlayer = Playerlist[args.Player.Index];
+            FACPlayer facPlayer = PlayerList[args.Player];
             if (facPlayer.loveCD != 0 && !args.Player.Group.HasPermission("facommands.nocd"))
                 args.Player.SendErrorMessage("This command is on cooldown for {0} seconds.", new object[1]
                 {
@@ -967,7 +963,7 @@ namespace FACommands
 
         private void FACPlant(CommandArgs args)
         {
-            FACPlayer facPlayer = Playerlist[args.Player.Index];
+            FACPlayer facPlayer = PlayerList[args.Player];
             if (facPlayer.faceplantCD != 0 && !args.Player.Group.HasPermission("facommands.nocd"))
             {
                 args.Player.SendErrorMessage("This command is on cooldown for {0} seconds.", facPlayer.faceplantCD);
@@ -987,7 +983,7 @@ namespace FACommands
 
         private void FACSlap(CommandArgs args)
         {
-            FACPlayer facPlayer = Playerlist[args.Player.Index];
+            FACPlayer facPlayer = PlayerList[args.Player];
             if (facPlayer.slapallCD != 0 && !args.Player.Group.HasPermission("facommands.nocd"))
             {
                 args.Player.SendErrorMessage("This command is on cooldown for {0} seconds.", facPlayer.slapallCD);
@@ -1006,7 +1002,7 @@ namespace FACommands
 
         private void FACGift(CommandArgs args)
         {
-            FACPlayer facPlayer = Playerlist[args.Player.Index];
+            FACPlayer facPlayer = PlayerList[args.Player];
             if (facPlayer.giftCD != 0 && !args.Player.Group.HasPermission("facommands.nocd"))
                 args.Player.SendErrorMessage("This command is on cooldown for {0} seconds.", facPlayer.giftCD);
             else if (args.Parameters.Count != 1)
@@ -1063,7 +1059,7 @@ namespace FACommands
 
         private void FACDisturb(CommandArgs args)
         {
-            FACPlayer facPlayer = Playerlist[args.Player.Index];
+            FACPlayer facPlayer = PlayerList[args.Player];
             if (facPlayer.disturbCD != 0 && !args.Player.Group.HasPermission("facommands.nocd"))
                 args.Player.SendErrorMessage("This command is on cooldown for {0} seconds.", facPlayer.disturbCD);
             else if (args.Parameters.Count != 1)
@@ -1230,7 +1226,7 @@ namespace FACommands
 
         public class Config
         {
-            public string[] ranklist = new string[1]
+            public string[] ranklist = new string[]
             {
         "Traveller, Citizen, Soldier, Fighter, Warrior, Champion, Gladiator, Commander, Warmaster, Hero, Executor, Lord, Legend, Demigod, Immortal, Unattainable, Keeper of Gods"
             };
