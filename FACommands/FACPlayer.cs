@@ -4,15 +4,12 @@ namespace FACommands
 {
   public class FACPlayer
   {
-    public int Index { get; set; }
-
-    public TSPlayer TSPlayer
+    public int Index
     {
-      get
-      {
-        return (TSPlayer) TShock.Players[this.Index];
-      }
+            get { return TSPlayer.Index; }
     }
+
+    public TSPlayer TSPlayer { get; set; }
 
     public string ranklist { get; set; }
 
@@ -52,9 +49,9 @@ namespace FACommands
 
     public int bankCD { get; set; }
 
-    public FACPlayer(int index)
+    public FACPlayer(TSPlayer tsp)
     {
-      this.Index = index;
+            this.TSPlayer = tsp;
     }
   }
 }
