@@ -1,10 +1,4 @@
-﻿// Decompiled with JetBrains decompiler
-// Type: FACommands.FACPlayer
-// Assembly: FACommands, Version=1.2.7.0, Culture=neutral, PublicKeyToken=null
-// MVID: CFC654C6-48C4-48BE-A6A4-7655CB7E5574
-// Assembly location: C:\Users\SKOCZEN\Documents\TShock\FACommands.dll
-
-using TShockAPI;
+﻿using TShockAPI;
 
 namespace FACommands
 {
