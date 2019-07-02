@@ -7,6 +7,7 @@ using Microsoft.Xna.Framework;
 using System.Linq;
 using System.Collections.Generic;
 using Terraria.DataStructures;
+using TShockAPI.Hooks;
 
 namespace FACommands
 {
@@ -16,7 +17,7 @@ namespace FACommands
     {
         private readonly Dictionary<string, Player> _playerList = new Dictionary<string, Player>();
         private Config _config;
-        private  Random _random;
+        private Random _random;
 
         public override string Name => "FACommands";
         public override Version Version => new Version(1, 6, 0);
@@ -32,6 +33,7 @@ namespace FACommands
             ServerApi.Hooks.GameInitialize.Register(this, OnInitialize);
             ServerApi.Hooks.ServerJoin.Register(this, OnJoin);
             ServerApi.Hooks.ServerLeave.Register(this, OnLeave);
+            GeneralHooks.ReloadEvent += OnReload;
         }
         protected override void Dispose(bool disposing)
         {
@@ -40,6 +42,7 @@ namespace FACommands
                 ServerApi.Hooks.GameInitialize.Deregister(this, OnInitialize);
                 ServerApi.Hooks.ServerJoin.Deregister(this, OnJoin);
                 ServerApi.Hooks.ServerLeave.Deregister(this, OnLeave);
+                GeneralHooks.ReloadEvent -= OnReload;
             }
             base.Dispose(disposing);
         }
@@ -55,6 +58,13 @@ namespace FACommands
             if (args.Who == TShock.Players.Count(p => p != null)) return;
             if (!_playerList.ContainsKey(TShock.Players[args.Who].UUID))
                 _playerList.Remove(TShock.Players[args.Who].UUID);
+        }
+
+        private void OnReload(ReloadEventArgs args)
+        {
+            var newConfig = Config.Read(true);
+            if (newConfig != null)
+                _config = newConfig;
         }
 
         private void OnInitialize(EventArgs args)
@@ -526,16 +536,11 @@ namespace FACommands
                 return;
             if (!FindPlayer(args.Parameters[0], args.Player, out var target))
                 return;
-            target.SetBuff(26, 900, true);
-            target.SetBuff(30, 900, true);
-            target.SetBuff(31, 900, true);
-            target.SetBuff(32, 900, true);
-            target.SetBuff(103, 900, true);
-            target.SetBuff(115, 900, true);
-            target.SetBuff(120, 900, true);
+            foreach (var buff in new []{26, 30, 31, 32, 103, 115, 120})
+                target.SetBuff(buff, 900, true);
             args.Player.SendInfoMessage($"You disturbed {target.Name}! You feel slightly better now...");
-            (TSPlayer.All).SendMessage($"{args.Player.Name} disturbed {target.Name}! Is he angry now? huh?", Color.Crimson);
-            (TShock.Log).Info($"{args.Player.Name} disturbed {target.Name}.");
+            TSPlayer.All.SendMessage($"{args.Player.Name} disturbed {target.Name}! Is he angry now? huh?", Color.Crimson);
+            TShock.Log.Info($"{args.Player.Name} disturbed {target.Name}.");
             if (!args.Player.Group.HasPermission("facommands.nocd"))
                 _playerList[args.Player.UUID].SetCooldown("disturb", _config.DisturbCooldown);
         }
@@ -603,7 +608,7 @@ namespace FACommands
                 if (players.Count == 0)
                     issuer.SendErrorMessage("No players matched!");
                 else if (players.Count > 1)
-                    TShock.Utils.SendMultipleMatchError(issuer, players);
+                    TShock.Utils.SendMultipleMatchError(issuer, players.Select(p => p.Name));
                 player = null;
                 return false;
             }
