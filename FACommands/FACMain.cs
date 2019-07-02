@@ -21,7 +21,7 @@ namespace FACommands
         public override string Name => "FACommands";
         public override Version Version => new Version(1, 6, 0);
         public override string Author => "MineBartekSA & Hiarni & Zaicon";
-        public override string Description => "FACommands";
+        public override string Description => "Fun and Admin Commands";
 
         public FACommands(Main game) : base(game) { }
 
@@ -52,6 +52,7 @@ namespace FACommands
 
         private void OnLeave(LeaveEventArgs args)
         {
+            if (args.Who == TShock.Players.Count(p => p != null)) return;
             if (!_playerList.ContainsKey(TShock.Players[args.Who].UUID))
                 _playerList.Remove(TShock.Players[args.Who].UUID);
         }
@@ -614,7 +615,7 @@ namespace FACommands
         {
             var play = _playerList[args.Player.UUID];
             var returnString = "";
-            if (play.CheckCooldown(commandName, cooldown, out var left) && !args.Player.Group.HasPermission("facommands.nocd"))
+            if (!play.CheckCooldown(commandName, cooldown, out var left) && !args.Player.Group.HasPermission("facommands.nocd"))
                 returnString = $"This command is on cooldown for {left} seconds.";
             else if (expr(args.Parameters.Count))
                 returnString = $"Invalid syntax! Proper syntax: /{commandName} {string.Join(" ", arguments)}";
@@ -649,7 +650,7 @@ namespace FACommands
                 if (!Cooldowns.ContainsKey(command)) return true;
                 if (Cooldowns[command].LastCooldown != cooldown) return true;
                 if (Cooldowns[command].LastUsed.Add(TimeSpan.FromSeconds(cooldown)) <= DateTime.Now) return true;
-                left = DateTime.Now.Subtract(Cooldowns[command].LastUsed.Add(TimeSpan.FromSeconds(cooldown))).Seconds;
+                left = DateTime.Now.Subtract(Cooldowns[command].LastUsed.Add(TimeSpan.FromSeconds(cooldown))).Seconds * -1;
                 return false;
             }
 
