@@ -20,7 +20,7 @@ namespace FACommands
         private Random _random;
 
         public override string Name => "FACommands";
-        public override Version Version => new Version(1, 6, 0);
+        public override Version Version => new Version(1, 7, 0);
         public override string Author => "MineBartekSA & Hiarni & Zaicon";
         public override string Description => "Fun and Admin Commands";
 
@@ -259,7 +259,7 @@ namespace FACommands
                     var leftToMaxStack = (item.maxStack - item.stack);
                     if (item.stack <= 0 || leftToMaxStack <= 0 || item.Name.ToLower().Contains("coin")) continue;
                     flag = false;
-                    args.Player.GiveItem(item.type, item.Name, item.width, item.height, leftToMaxStack);
+                    args.Player.GiveItem(item.type, leftToMaxStack, item.prefix);
                 }
                 if (!flag)
                     args.Player.SendSuccessMessage("Filled up all your items.");
@@ -271,7 +271,7 @@ namespace FACommands
                 var item = args.Player.TPlayer.inventory[args.TPlayer.selectedItem];
                 var leftToMaxStack = (item.maxStack - item.stack);
                 if (item.stack > 0 && leftToMaxStack > 0)
-                    args.Player.GiveItem(item.type, item.Name, item.width, item.height, leftToMaxStack);
+                    args.Player.GiveItem(item.type, leftToMaxStack, item.prefix);
                 if (leftToMaxStack == 0)
                     args.Player.SendErrorMessage($"Your {item.Name} is already full.");
                 else
@@ -515,14 +515,14 @@ namespace FACommands
             if (_random.Next(2) == 0)
             {
                 var itemById = TShock.Utils.GetItemById(1922);
-                target.GiveItem(itemById.type, itemById.Name, itemById.width, itemById.height, itemById.maxStack);
+                target.GiveItem(itemById.type, itemById.maxStack, itemById.prefix);
                 target.SendInfoMessage($"{args.Player.Name} gave you Coal! You were a naughty {seriouslyRealGender}...");
                 args.Player.SendSuccessMessage($"You gave {target.Name} Coal! {target.Name} was a naughty {seriouslyRealGender}...");
             }
             else
             {
                 var itemById = TShock.Utils.GetItemById(1869);
-                target.GiveItem(itemById.type, itemById.Name, itemById.width, itemById.height, itemById.stack, 1);
+                target.GiveItem(itemById.type, 1, itemById.prefix);
                 target.SendInfoMessage($"{args.Player.Name} gave you a Present! You were a good {seriouslyRealGender}...");
                 args.Player.SendSuccessMessage($"You gave {target.Name} a Present! {target.Name} was a good {seriouslyRealGender}...");
                 if (!args.Player.Group.HasPermission("facommands.nocd"))
@@ -550,7 +550,7 @@ namespace FACommands
             if (args.Parameters.Count == 1 && args.Parameters[0].Length != 0)
             {
                 var user = args.Parameters[0];
-                var userByName = TShock.Users.GetUserByName(user);
+                var userByName = TShock.UserAccounts.GetUserAccountByName(user);
                 if (userByName != null)
                 {
                     args.Player.SendMessage($"User {user} exists.", Color.DeepPink);
@@ -602,17 +602,18 @@ namespace FACommands
 
         private bool FindPlayer(string param, TSPlayer issuer, out TSPlayer player)
         {
-            var players = TShock.Utils.FindPlayer(param);
-            if (players.Count == 0 || players.Count > 1)
+            player = null;
+            if (!(TShock.Players.Where(p => p.Name.Contains(param)) is List<TSPlayer> players))
+                return false;
+            if (players.Count() != 1)
             {
-                if (players.Count == 0)
+                if (players.Count() > 1)
+                    issuer.SendMultipleMatchError(players.Select(p => p.Name));
+                else
                     issuer.SendErrorMessage("No players matched!");
-                else if (players.Count > 1)
-                    TShock.Utils.SendMultipleMatchError(issuer, players.Select(p => p.Name));
-                player = null;
                 return false;
             }
-            player = players[0];
+            player = players.First();
             return true;
         }
 
@@ -646,7 +647,7 @@ namespace FACommands
         private class Player
         {
             public Player() => Cooldowns = new Dictionary<string, Cooldown>();
-            //public List<string> RankList { get; set; } // Note: It was in the code. I don't know what it was for
+            //public List<string> RankList { get; set; } // Note: It was in the legacy code. I don't know what it was for
             private Dictionary<string, Cooldown> Cooldowns { get; }
 
             public bool CheckCooldown(string command, int cooldown, out int left)
