@@ -66,7 +66,7 @@ namespace FACommands
                     BankCooldown = old.BankCd,
                     MaxRollDice = old.MaxRollDice,
                     MinRollDice = old.MinRangeRollDice,
-                    NpcList = new[] { 19, 54, 209, 38, 20, 207, 107, 22, 124, 17, 18, 227, 208, 229, 178, 353, 368, 160, 228, 108, 369, 441, 550 },
+                    NpcList = new[] { 19, 54, 209, 38, 20, 207, 107, 22, 124, 17, 18, 227, 208, 229, 178, 353, 368, 160, 228, 108, 369, 441, 550, 142, 588, 633 },
                     OwnerBroadcastPrefix = "(Owner Broadcast)",
                     OwnerBroadcastColor = new ConfigColor { R = Color.Cyan.R, G = Color.Cyan.G, B = Color.Cyan.B }
             };
@@ -105,7 +105,7 @@ namespace FACommands
             BankCooldown = 10;
             MaxRollDice = 100;
             MinRollDice = 1;
-            NpcList = new[]{ 19, 54, 209, 38, 20, 207, 107, 22, 124, 17, 18, 227, 208, 229, 178, 353, 368, 160, 228, 108, 369, 441, 550 };
+            NpcList = new[]{ 19, 54, 209, 38, 20, 207, 107, 22, 124, 17, 18, 227, 208, 229, 178, 353, 368, 160, 228, 108, 369, 441, 550, 142, 588, 633 };
             OwnerBroadcastPrefix = "(Owner Broadcast)";
             OwnerBroadcastColor = new ConfigColor{ R = Color.Cyan.R, G = Color.Cyan.G, B = Color.Cyan.B };
         }

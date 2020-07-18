@@ -62,9 +62,16 @@ namespace FACommands
 
         private void OnReload(ReloadEventArgs args)
         {
-            var newConfig = Config.Read(true);
-            if (newConfig != null)
-                _config = newConfig;
+            try
+            {
+                var newConfig = Config.Read(true);
+                if (newConfig != null)
+                    _config = newConfig;
+            }
+            catch
+            {
+                args.Player.SendErrorMessage("[FACommands] Failed to reload config");
+            }
         }
 
         private void OnInitialize(EventArgs args)
@@ -581,7 +588,7 @@ namespace FACommands
 
         private void FacBI(CommandArgs args)
         {
-            if (args.Parameters.Count != 1 && args.Parameters[0].Length == 0)
+            if (args.Parameters.Count == 0)
             {
                 args.Player.SendErrorMessage("Invalid syntax: /baninfo <player>");
                 return;
@@ -603,17 +610,16 @@ namespace FACommands
         private bool FindPlayer(string param, TSPlayer issuer, out TSPlayer player)
         {
             player = null;
-            if (!(TShock.Players.Where(p => p.Name.Contains(param)) is List<TSPlayer> players))
-                return false;
-            if (players.Count() != 1)
+            var players = TShock.Players.Where(p => p?.Name?.Contains(param) ?? false).ToArray();
+            if (players.Length != 1)
             {
-                if (players.Count() > 1)
+                if (players.Length > 1)
                     issuer.SendMultipleMatchError(players.Select(p => p.Name));
                 else
                     issuer.SendErrorMessage("No players matched!");
                 return false;
             }
-            player = players.First();
+            player = players[0];
             return true;
         }
 
@@ -634,12 +640,19 @@ namespace FACommands
 
         private void Reload(CommandArgs args)
         {
-            var newConfig = Config.Read(true);
-            if (newConfig != null)
+            try
             {
-                _config = newConfig;
-                args.Player.SendSuccessMessage("Successfully reloaded config!");
-                return;
+                var newConfig = Config.Read(true);
+                if (newConfig != null)
+                {
+                    _config = newConfig;
+                    args.Player.SendSuccessMessage("Successfully reloaded config!");
+                    return;
+                }
+            }
+            catch
+            {
+                args.Player.SendErrorMessage("Could not read config!");
             }
             args.Player.SendErrorMessage("Failed to reload config!");
         }
