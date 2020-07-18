@@ -20,7 +20,7 @@ namespace FACommands
         private Random _random;
 
         public override string Name => "FACommands";
-        public override Version Version => new Version(1, 7, 0);
+        public override Version Version => new Version(1, 7, 1);
         public override string Author => "MineBartekSA & Hiarni & Zaicon";
         public override string Description => "Fun and Admin Commands";
 
