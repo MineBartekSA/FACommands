@@ -1,9 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
-MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FACommands", "FACommands\FACommands.csproj", "{72127E7A-E669-40FA-8FFE-F943DAA9946F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FACommands", "FACommands\FACommands.csproj", "{39A3BCE0-318F-41D0-A8CE-06EBB02B6356}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,12 +8,9 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{72127E7A-E669-40FA-8FFE-F943DAA9946F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{72127E7A-E669-40FA-8FFE-F943DAA9946F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{72127E7A-E669-40FA-8FFE-F943DAA9946F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{72127E7A-E669-40FA-8FFE-F943DAA9946F}.Release|Any CPU.Build.0 = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
+		{39A3BCE0-318F-41D0-A8CE-06EBB02B6356}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{39A3BCE0-318F-41D0-A8CE-06EBB02B6356}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{39A3BCE0-318F-41D0-A8CE-06EBB02B6356}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{39A3BCE0-318F-41D0-A8CE-06EBB02B6356}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
