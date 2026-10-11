@@ -1,5 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Terraria.ID;
 using TShockAPI;
 
 namespace FACommands;
@@ -7,7 +9,7 @@ namespace FACommands;
 public class Config
 {
     [JsonIgnore]
-    private static readonly string Path = System.IO.Path.Combine(TShock.SavePath, "FACommands.json");
+    private static string Path => System.IO.Path.Combine(TShock.SavePath, "FACommands.json");
     public static Config Create()
     {
         if (File.Exists(Path))
@@ -16,7 +18,9 @@ public class Config
         try
         {
             var conf = new Config();
-            File.WriteAllText(Path, JsonConvert.SerializeObject(conf, Formatting.Indented));
+            conf.Validate();
+            Directory.CreateDirectory(TShock.SavePath);
+            Write(conf);
             return conf;
         }
         catch
@@ -29,55 +33,69 @@ public class Config
     public static Config Read()
     {
         TShock.Log.Info("Reading config file");
-        try
+        var config = Parse(File.ReadAllText(Path), out var migrated);
+        if (migrated)
         {
-            var sr = new StreamReader(File.Open(Path, FileMode.Open));
-            var rawJson = sr.ReadToEnd();
-            sr.Close();
-            if (rawJson.Contains("Cooldown"))
-            {
-                var conf = JsonConvert.DeserializeObject<Config>(rawJson) ?? throw new Exception("Failed to read configuration");
-                File.WriteAllText(Path, JsonConvert.SerializeObject(conf, Formatting.Indented));
-                return conf;
-            }
             TShock.Log.Info("Converting old config file");
-            var old = JsonConvert.DeserializeObject<OldConfig>(rawJson) ?? throw new Exception("Failed to read configuration");
-            var newConfig = new Config
-            {
-                RankList = old.RankList,
-                MoreCooldown = old.MoreCd,
-                SlayCooldown = old.SlayCd,
-                FartCooldown = old.FartCd,
-                TickleCooldown = old.TickleCd,
-                PokeCooldown = old.PokeCd,
-                SpokeCooldown = old.SpokeCd,
-                HugCooldown = old.HugCd,
-                LickCooldown = old.LickCd,
-                FacepalmCooldown = old.FacepalmCd,
-                KissCooldown = old.KissCd,
-                BabyCooldown = old.BabyCd,
-                StabCooldown = old.StabCd,
-                LoveCooldown = old.LoveCd,
-                FaceplantCooldown = old.FaceplantCd,
-                SlapAllCooldown = old.SlapAllCd,
-                GiftCooldown = old.GiftCd,
-                DisturbCooldown = old.DisturbCd,
-                BankCooldown = old.BankCd,
-                MaxRollDice = old.MaxRollDice,
-                MinRollDice = old.MinRangeRollDice,
-                NpcList = new[] { 19, 54, 209, 38, 20, 207, 107, 22, 124, 17, 18, 227, 208, 229, 178, 353, 368, 160, 228, 108, 369, 441, 550, 142, 588, 633 },
-                OwnerBroadcastPrefix = "(Owner Broadcast)",
-                OwnerBroadcastColor = new ConfigColor { R = Color.Cyan.R, G = Color.Cyan.G, B = Color.Cyan.B }
-            };
-            File.WriteAllText(Path, JsonConvert.SerializeObject(newConfig, Formatting.Indented));
-            return newConfig;
+            // Keep the original legacy settings before converting them.
+            if (!File.Exists(Path + ".legacy.bak"))
+                File.Copy(Path, Path + ".legacy.bak");
+            Write(config);
         }
-        catch (JsonReaderException e)
+        return config;
+    }
+
+    internal static Config Parse(string rawJson, out bool migrated)
+    {
+        var json = JObject.Parse(rawJson);
+        var legacyNames = new Dictionary<string, string>
         {
-            TShock.Log.Error(e.ToString());
-            TShock.Log.ConsoleError($"[FACommands] Failed to load config! Using defaults");
-            return new Config();
+            ["ranklist"] = "Rank List", ["moreCD"] = "More Cooldown",
+            ["slayCD"] = "Slay Cooldown", ["fartCD"] = "Fart Cooldown",
+            ["tickleCD"] = "Tickle Cooldown", ["pokeCD"] = "Poke Cooldown",
+            ["spokeCD"] = "Spoke Cooldown", ["hugCD"] = "Hug Cooldown",
+            ["lickCD"] = "Lick Cooldown", ["facepalmCD"] = "Facepalm Cooldown",
+            ["kissCD"] = "Kiss Cooldown", ["babyCD"] = "Baby Cooldown",
+            ["stabCD"] = "Stab Cooldown", ["loveCD"] = "Love Cooldown",
+            ["faceplantCD"] = "Faceplant Cooldown", ["slapallCD"] = "Slap All Cooldown",
+            ["giftCD"] = "Gift Cooldown", ["disturbCD"] = "Disturb Cooldown",
+            ["bankCD"] = "Bank Cooldown", ["maxRollDice"] = "Max Roll Dice",
+            ["minRangeRollDice"] = "Min Roll Dice"
+        };
+        migrated = false;
+        foreach (var (legacy, current) in legacyNames)
+        {
+            if (!json.TryGetValue(legacy, StringComparison.OrdinalIgnoreCase, out var value)) continue;
+            // Modern values take priority in a mixed-format file.
+            if (json.GetValue(current, StringComparison.OrdinalIgnoreCase) == null)
+                json[current] = value.DeepClone();
+            migrated = true;
         }
+        var config = json.ToObject<Config>() ?? throw new JsonSerializationException("Failed to read configuration");
+        config.Validate();
+        return config;
+    }
+
+    internal void Validate()
+    {
+        if (RankList == null || RankList.Any(rank => rank == null))
+            throw new JsonSerializationException("Rank List must be an array of strings.");
+        if (NpcList == null || NpcList.Any(id => id <= 0 || id >= NPCID.Count))
+            throw new JsonSerializationException($"NPC Spawn List must contain IDs from 1 to {NPCID.Count - 1}.");
+        if (OwnerBroadcastPrefix == null || OwnerBroadcastColor == null)
+            throw new JsonSerializationException("Owner broadcast prefix and color must not be null.");
+        if (MinRollDice > MaxRollDice)
+            throw new JsonSerializationException("Min Roll Dice must not exceed Max Roll Dice.");
+        foreach (var property in typeof(Config).GetProperties().Where(p => p.Name.EndsWith("Cooldown", StringComparison.Ordinal)))
+            if ((int)property.GetValue(this)! < 0)
+                throw new JsonSerializationException($"{property.Name} must not be negative.");
+    }
+
+    private static void Write(Config config)
+    {
+        var temporary = Path + ".tmp";
+        File.WriteAllText(temporary, JsonConvert.SerializeObject(config, Formatting.Indented));
+        File.Move(temporary, Path, overwrite: true);
     }
 
     public Config()
